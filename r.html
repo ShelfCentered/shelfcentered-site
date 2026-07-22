@@ -42,13 +42,32 @@
     <div id="content" class="card">
       <p class="loading">Loading recipe...</p>
     </div>
-    <p style="text-align:center; font-size:10px; color:#ccc; margin-top:16px;">page version: 2026-07-22-v2</p>
+    <p style="text-align:center; font-size:10px; color:#ccc; margin-top:16px;">page version: 2026-07-22-v3</p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    // Ultimate safety net: catches ANY uncaught JS error on this page
+    // (including the CDN script failing to load) and shows it as visible
+    // text, instead of leaving "Loading recipe..." stuck forever with no
+    // way to tell what went wrong.
+    window.onerror = function (message, source, lineno, colno, error) {
+      const content = document.getElementById('content');
+      if (content) {
+        content.innerHTML = `<p class="error">Something went wrong loading this page.</p><p style="font-size:11px;color:#bbb;margin-top:10px;word-break:break-all;">${String(message)}</p>`;
+      }
+      return true; // prevent the browser's own error handling too
+    };
+
     const SUPABASE_URL = 'https://ouhrvnzeotlmdajkpvcy.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_8wWAPVt_YimeFzua5a3ydg_SZePYGYF';
+
+    if (typeof window.supabase === 'undefined') {
+      document.getElementById('content').innerHTML =
+        '<p class="error">Could not load required resources. Try opening this link in Safari directly, or check your internet connection.</p>';
+      throw new Error('Supabase library failed to load from CDN');
+    }
+
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     function getRecipeId() {
