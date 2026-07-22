@@ -64,32 +64,38 @@
         return;
       }
 
-      const { data, error } = await supabase
-        .from('shared_recipes')
-        .select('*')
-        .eq('id', id)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('shared_recipes')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      if (error || !data) {
-        content.innerHTML = '<p class="error">This recipe link is no longer available.</p>';
-        return;
+        if (error || !data) {
+          console.error('Supabase error loading shared recipe:', error);
+          content.innerHTML = `<p class="error">This recipe link is no longer available.</p><p style="font-size:11px;color:#bbb;margin-top:10px;">${error ? escapeHtml(error.message || String(error)) : ''}</p>`;
+          return;
+        }
+
+        const statsLine = [
+          data.prep_time_minutes ? `${data.prep_time_minutes} min` : '',
+          data.servings ? `serves ${data.servings}` : '',
+        ].filter(Boolean).join(' · ');
+
+        content.innerHTML = `
+          <h1>${escapeHtml(data.name)}</h1>
+          ${data.ingredients?.length ? `<div class="section-label">Ingredients</div><div class="ingredients">${data.ingredients.map(escapeHtml).join('\n')}</div>` : ''}
+          ${data.instructions ? `<div class="section-label">Instructions</div><div class="instructions">${escapeHtml(data.instructions)}</div>` : ''}
+          ${statsLine ? `<div class="stats">${statsLine}</div>` : ''}
+          <div class="buttons">
+            <a class="btn btn-primary" href="shelfcentered://import/${id}">Open in ShelfCentered</a>
+            <a class="btn btn-secondary" href="index.html">Don't have the app? Get ShelfCentered</a>
+          </div>
+        `;
+      } catch (err) {
+        console.error('Failed to load shared recipe:', err);
+        content.innerHTML = `<p class="error">Something went wrong loading this recipe.</p><p style="font-size:11px;color:#bbb;margin-top:10px;">${escapeHtml(err.message || String(err))}</p>`;
       }
-
-      const statsLine = [
-        data.prep_time_minutes ? `${data.prep_time_minutes} min` : '',
-        data.servings ? `serves ${data.servings}` : '',
-      ].filter(Boolean).join(' · ');
-
-      content.innerHTML = `
-        <h1>${escapeHtml(data.name)}</h1>
-        ${data.ingredients?.length ? `<div class="section-label">Ingredients</div><div class="ingredients">${data.ingredients.map(escapeHtml).join('\n')}</div>` : ''}
-        ${data.instructions ? `<div class="section-label">Instructions</div><div class="instructions">${escapeHtml(data.instructions)}</div>` : ''}
-        ${statsLine ? `<div class="stats">${statsLine}</div>` : ''}
-        <div class="buttons">
-          <a class="btn btn-primary" href="shelfcentered://import/${id}">Open in ShelfCentered</a>
-          <a class="btn btn-secondary" href="index.html">Don't have the app? Get ShelfCentered</a>
-        </div>
-      `;
     }
 
     function escapeHtml(str) {
