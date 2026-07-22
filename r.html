@@ -42,6 +42,7 @@
     <div id="content" class="card">
       <p class="loading">Loading recipe...</p>
     </div>
+    <p style="text-align:center; font-size:10px; color:#ccc; margin-top:16px;">page version: 2026-07-22-v2</p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -64,12 +65,18 @@
         return;
       }
 
+      const query = supabase
+        .from('shared_recipes')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      const timeout = new Promise((resolve) =>
+        setTimeout(() => resolve({ data: null, error: { message: 'Request timed out after 8 seconds' } }), 8000)
+      );
+
       try {
-        const { data, error } = await supabase
-          .from('shared_recipes')
-          .select('*')
-          .eq('id', id)
-          .single();
+        const { data, error } = await Promise.race([query, timeout]);
 
         if (error || !data) {
           console.error('Supabase error loading shared recipe:', error);
