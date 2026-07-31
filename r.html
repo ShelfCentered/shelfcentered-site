@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shared Recipe — ShelfCentered</title>
+<meta id="ogTitle" property="og:title" content="A recipe from ShelfCentered">
+<meta id="ogDescription" property="og:description" content="View this recipe on ShelfCentered.">
+<meta property="og:image" content="https://shelfcentered.me/logo.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta id="twitterTitle" name="twitter:title" content="A recipe from ShelfCentered">
+<meta id="twitterDescription" name="twitter:description" content="View this recipe on ShelfCentered.">
+<meta name="twitter:image" content="https://shelfcentered.me/logo.png">
 <style>
   :root {
     --cream: #F6F3EE;
@@ -42,7 +50,6 @@
     <div id="content" class="card">
       <p class="loading">Loading recipe...</p>
     </div>
-    <p style="text-align:center; font-size:10px; color:#ccc; margin-top:16px;">page version: 2026-07-22-v3</p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -51,12 +58,12 @@
     // (including the CDN script failing to load) and shows it as visible
     // text, instead of leaving "Loading recipe..." stuck forever with no
     // way to tell what went wrong.
-    window.onerror = function (message, source, lineno, colno, error) {
+    window.onerror = function (message) {
       const content = document.getElementById('content');
       if (content) {
         content.innerHTML = `<p class="error">Something went wrong loading this page.</p><p style="font-size:11px;color:#bbb;margin-top:10px;word-break:break-all;">${String(message)}</p>`;
       }
-      return true; // prevent the browser's own error handling too
+      return true;
     };
 
     const SUPABASE_URL = 'https://ouhrvnzeotlmdajkpvcy.supabase.co';
@@ -73,6 +80,12 @@
     function getRecipeId() {
       const params = new URLSearchParams(window.location.search);
       return params.get('id');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
     }
 
     async function loadRecipe() {
@@ -103,6 +116,17 @@
           return;
         }
 
+        // Fill in real Open Graph tags now that we have the recipe, so
+        // link previews in Messages/social apps show real content.
+        const shortDescription = data.ingredients?.length
+          ? `Ingredients: ${data.ingredients.slice(0, 4).join(', ')}${data.ingredients.length > 4 ? '...' : ''}`
+          : 'View this recipe on ShelfCentered.';
+        document.getElementById('ogTitle').setAttribute('content', data.name);
+        document.getElementById('ogDescription').setAttribute('content', shortDescription);
+        document.getElementById('twitterTitle').setAttribute('content', data.name);
+        document.getElementById('twitterDescription').setAttribute('content', shortDescription);
+        document.title = `${data.name} — ShelfCentered`;
+
         const statsLine = [
           data.prep_time_minutes ? `${data.prep_time_minutes} min` : '',
           data.servings ? `serves ${data.servings}` : '',
@@ -122,12 +146,6 @@
         console.error('Failed to load shared recipe:', err);
         content.innerHTML = `<p class="error">Something went wrong loading this recipe.</p><p style="font-size:11px;color:#bbb;margin-top:10px;">${escapeHtml(err.message || String(err))}</p>`;
       }
-    }
-
-    function escapeHtml(str) {
-      const div = document.createElement('div');
-      div.textContent = str;
-      return div.innerHTML;
     }
 
     loadRecipe();
